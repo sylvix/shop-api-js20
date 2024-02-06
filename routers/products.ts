@@ -1,17 +1,13 @@
 import {Router} from "express";
 import {ProductWithoutId} from "../types";
 import {imagesUpload} from "../multer";
-import mysqlDb from "../mysqlDb";
-import {ResultSetHeader, RowDataPacket} from "mysql2";
+import Product from "../models/Product";
+import {Types} from "mongoose";
 const productsRouter = Router();
 
-
-productsRouter.get('/', async (req, res, next) => {
+productsRouter.get('/', async (_req, res, next) => {
   try {
-    const [results] = await mysqlDb.getConnection().query(
-        'SELECT p.id, p.title, p.price, p.image, c.name category_name FROM products p ' +
-        'LEFT JOIN shop.categories c on p.category_id = c.id'
-    );
+    const results = await Product.find();
 
     res.send(results);
   } catch (e) {
@@ -19,45 +15,43 @@ productsRouter.get('/', async (req, res, next) => {
   }
 });
 
-productsRouter.get('/:id', async (req, res) => {
-  const [results] = await mysqlDb.getConnection().query(
-      'SELECT p.id, p.title, p.price, p.image, c.name category_name FROM products p ' +
-      'LEFT JOIN shop.categories c on p.category_id = c.id ' +
-      'WHERE p.id = ?',
-      [req.params.id]
-  ) as RowDataPacket[];
+productsRouter.get('/:id', async (req, res, next) => {
+  try {
+    let _id: Types.ObjectId;
+    try {
+      _id = new Types.ObjectId(req.params.id);
+    } catch {
+      return res.status(404).send({error: 'Wrong ObjectId!'});
+    }
 
-  const product = results[0];
+    const product = await Product.findOne({_id});
 
-  if (!product) {
-    return res.status(404).send({error: 'Not found!'});
+    if (!product) {
+      return res.status(404).send({error: 'Not found!'});
+    }
+
+    res.send(product);
+  } catch (e) {
+    next(e);
   }
-
-  res.send(product);
 });
 
-productsRouter.post('/', imagesUpload.single('image'), async (req, res) => {
-  const product: ProductWithoutId = {
-    title: req.body.title,
-    price: parseFloat(req.body.price),
-    description: req.body.description,
-    image: req.file ? req.file.filename : null,
-    categoryId: parseInt(req.body.categoryId),
-  };
+productsRouter.post('/', imagesUpload.single('image'), async (req, res, next) => {
+  try {
+    const productData: ProductWithoutId = {
+      title: req.body.title,
+      price: parseFloat(req.body.price),
+      description: req.body.description,
+      image: req.file ? req.file.filename : null,
+    };
 
-  const [result] = await mysqlDb.getConnection().query(
-      'INSERT INTO products (category_id, title, price, description, image)' +
-      'VALUES (?, ?, ?, ?, ?)',
-      [product.categoryId, product.title, product.price, product.description, product.image],
-  ) as ResultSetHeader[];
+    const product = new Product(productData);
+    await product.save();
 
-  console.log(result.insertId);
-
-  res.send({
-    id: result.insertId,
-    ...product,
-  });
+    res.send(product);
+  } catch (e) {
+    next(e);
+  }
 });
-
 
 export default productsRouter;
