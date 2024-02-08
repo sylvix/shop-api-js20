@@ -1,8 +1,8 @@
 import express from 'express';
-import productsRouter from "./routers/products";
+import productsRouter from './routers/products';
 import cors from 'cors';
-import mongoose from "mongoose";
-import config from "./config";
+import mongoose from 'mongoose';
+import config from './config';
 
 const app = express();
 const port = 8000;

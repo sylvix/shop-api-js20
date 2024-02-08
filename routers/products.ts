@@ -1,8 +1,9 @@
-import {Router} from "express";
-import {ProductWithoutId} from "../types";
-import {imagesUpload} from "../multer";
-import Product from "../models/Product";
-import {Types} from "mongoose";
+import {Router} from 'express';
+import {ProductWithoutId} from '../types';
+import {imagesUpload} from '../multer';
+import Product from '../models/Product';
+import {Types} from 'mongoose';
+
 const productsRouter = Router();
 
 productsRouter.get('/', async (_req, res, next) => {
