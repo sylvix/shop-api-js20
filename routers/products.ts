@@ -1,14 +1,14 @@
 import {Router} from 'express';
-import {ProductWithoutId} from '../types';
+import mongoose, {Types} from 'mongoose';
+import {ProductMutation} from '../types';
 import {imagesUpload} from '../multer';
 import Product from '../models/Product';
-import {Types} from 'mongoose';
 
 const productsRouter = Router();
 
 productsRouter.get('/', async (_req, res, next) => {
   try {
-    const results = await Product.find();
+    const results = await Product.find().populate('category', 'title description');
 
     res.send(results);
   } catch (e) {
@@ -25,7 +25,7 @@ productsRouter.get('/:id', async (req, res, next) => {
       return res.status(404).send({error: 'Wrong ObjectId!'});
     }
 
-    const product = await Product.findOne({_id});
+    const product = await Product.findById(_id);
 
     if (!product) {
       return res.status(404).send({error: 'Not found!'});
@@ -39,7 +39,8 @@ productsRouter.get('/:id', async (req, res, next) => {
 
 productsRouter.post('/', imagesUpload.single('image'), async (req, res, next) => {
   try {
-    const productData: ProductWithoutId = {
+    const productData: ProductMutation = {
+      category: req.body.category,
       title: req.body.title,
       price: parseFloat(req.body.price),
       description: req.body.description,
@@ -51,6 +52,10 @@ productsRouter.post('/', imagesUpload.single('image'), async (req, res, next) =>
 
     res.send(product);
   } catch (e) {
+    if (e instanceof mongoose.Error.ValidationError) {
+      return res.status(422).send(e);
+    }
+
     next(e);
   }
 });
