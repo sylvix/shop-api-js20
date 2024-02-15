@@ -1,12 +1,10 @@
 import express from 'express';
 import Category from '../models/Category';
-import mongoose, {mongo} from 'mongoose';
-
-
+import mongoose, { mongo } from 'mongoose';
 
 const categoriesRouter = express.Router();
 
-categoriesRouter.get('/', async (req, res, next) => {
+categoriesRouter.get('/', async (_req, res, next) => {
   try {
     const categories = await Category.find();
     return res.send(categories);
@@ -32,7 +30,7 @@ categoriesRouter.post('/', async (req, res, next) => {
     }
 
     if (e instanceof mongo.MongoServerError && e.code === 11000) {
-      return res.status(422).send({message: 'Title should be unique'});
+      return res.status(422).send({ message: 'Title should be unique' });
     }
 
     next(e);
