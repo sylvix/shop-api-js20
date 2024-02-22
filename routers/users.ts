@@ -14,7 +14,7 @@ userRouter.post('/', async (req, res, next) => {
 
     user.generateToken();
     await user.save();
-    return res.send(user);
+    return res.send({message: 'ok!', user});
   } catch (error) {
     if (error instanceof mongoose.Error.ValidationError) {
       return res.status(422).send(error);
