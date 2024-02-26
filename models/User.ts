@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import mongoose from 'mongoose';
+import mongoose, { HydratedDocument } from 'mongoose';
 import bcrypt from 'bcrypt';
 import { UserFields, UserMethods, UserModel } from '../types';
 
@@ -13,13 +13,20 @@ const UserSchema = new Schema<UserFields, UserModel, UserMethods>({
     required: true,
     unique: true,
     validate: {
-      validator: async (username: string) => {
-        const user = await User.findOne({username: username});
-        if (user) return false;
-        return true;
+      validator: async function (
+        this: HydratedDocument<UserFields>,
+        username: string,
+      ): Promise<boolean> {
+        if (!this.isModified('username')) return true;
+
+        const user: HydratedDocument<UserFields> | null = await User.findOne({
+          username: username,
+        });
+
+        return !user;
       },
-      message: "This user is already registered!"
-    }
+      message: 'This user is already registered!',
+    },
   },
   password: {
     type: String,
