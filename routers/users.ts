@@ -14,7 +14,7 @@ userRouter.post('/', async (req, res, next) => {
 
     user.generateToken();
     await user.save();
-    return res.send({message: 'ok!', user});
+    return res.send({ message: 'ok!', user });
   } catch (error) {
     if (error instanceof mongoose.Error.ValidationError) {
       return res.status(422).send(error);
@@ -47,6 +47,36 @@ userRouter.post('/sessions', async (req, res, next) => {
   }
 });
 
+userRouter.delete('/sessions', async (req, res, next) => {
+  try {
+    const headerValue = req.get('Authorization');
+    const successMessage = { message: 'Success!' };
+
+    if (!headerValue) {
+      return res.send({ ...successMessage, stage: 'No header' });
+    }
+
+    const [_bearer, token] = headerValue.split(' ');
+
+    if (!token) {
+      return res.send({ ...successMessage, stage: 'No token' });
+    }
+
+    const user = await User.findOne({ token });
+
+    if (!user) {
+      return res.send({ ...successMessage, stage: 'No user' });
+    }
+
+    user.generateToken();
+    await user.save();
+
+    return res.send({ ...successMessage, stage: 'Success' });
+  } catch (e) {
+    return next(e);
+  }
+});
+
 userRouter.get('/secret', auth, async (req: RequestWithUser, res, next) => {
   try {
     return res.send({
@@ -54,7 +84,7 @@ userRouter.get('/secret', auth, async (req: RequestWithUser, res, next) => {
       username: req.user?.username,
     });
   } catch (e) {
-    next(e);
+    return next(e);
   }
 });
 
