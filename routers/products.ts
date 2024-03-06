@@ -3,6 +3,8 @@ import mongoose, { Types } from 'mongoose';
 import { ProductMutation } from '../types';
 import { imagesUpload } from '../multer';
 import Product from '../models/Product';
+import auth from '../middleware/auth';
+import permit from '../middleware/permit';
 
 const productsRouter = Router();
 
@@ -42,6 +44,8 @@ productsRouter.get('/:id', async (req, res, next) => {
 
 productsRouter.post(
   '/',
+  auth,
+  permit('admin'),
   imagesUpload.single('image'),
   async (req, res, next) => {
     try {
