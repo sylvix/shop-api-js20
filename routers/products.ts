@@ -30,7 +30,7 @@ productsRouter.get('/:id', async (req, res, next) => {
       return res.status(404).send({ error: 'Wrong ObjectId!' });
     }
 
-    const product = await Product.findById(_id);
+    const product = await Product.findById(_id).populate('category');
 
     if (!product) {
       return res.status(404).send({ error: 'Not found!' });
@@ -61,6 +61,49 @@ productsRouter.post(
       await product.save();
 
       res.send(product);
+    } catch (e) {
+      if (e instanceof mongoose.Error.ValidationError) {
+        return res.status(422).send(e);
+      }
+
+      next(e);
+    }
+  },
+);
+
+productsRouter.patch(
+  '/:id',
+  auth,
+  permit('admin'),
+  imagesUpload.single('image'),
+  async (req, res, next) => {
+    try {
+      let image: string | undefined | null = undefined;
+
+      if (req.body.image === 'delete') {
+        image = null;
+      } else if (req.file) {
+        image = req.file.filename;
+      }
+
+      const result = await Product.updateOne(
+        { _id: req.params.id },
+        {
+          $set: {
+            category: req.body.category,
+            title: req.body.title,
+            price: parseFloat(req.body.price),
+            description: req.body.description,
+            image,
+          },
+        },
+      );
+
+      if (result.matchedCount === 0) {
+        return res.status(404).send({ message: 'Not found!' });
+      }
+
+      return res.send({ message: 'ok' });
     } catch (e) {
       if (e instanceof mongoose.Error.ValidationError) {
         return res.status(422).send(e);
